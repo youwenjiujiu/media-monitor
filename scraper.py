@@ -83,44 +83,6 @@ def _scrape_with_trafilatura(url: str, html: str | None = None) -> ScrapedArticl
         return None
 
 
-def _scrape_with_newspaper(url: str, html: str | None = None) -> ScrapedArticle | None:
-    try:
-        from newspaper import Article
-
-        article = Article(url)
-        if html:
-            article.download(input_html=html)
-        else:
-            article.download()
-        article.parse()
-
-        if not article.text:
-            return None
-
-        date_str = None
-        if article.publish_date:
-            date_str = article.publish_date.strftime("%Y-%m-%d")
-
-        source = None
-        if hasattr(article, "meta_data") and article.meta_data:
-            og = article.meta_data.get("og", {})
-            if isinstance(og, dict):
-                source = og.get("site_name")
-        source = source or article.source_url
-
-        return ScrapedArticle(
-            url=url,
-            headline=article.title,
-            text=article.text,
-            source=source,
-            date=date_str,
-            is_paywalled=False,
-        )
-    except Exception as e:
-        logger.warning(f"newspaper4k failed for {url}: {e}")
-        return None
-
-
 def scrape_article(url: str) -> ScrapedArticle:
     url = url.strip()
 
@@ -134,11 +96,6 @@ def scrape_article(url: str) -> ScrapedArticle:
 
     # Also try trafilatura's own fetcher
     article = _scrape_with_trafilatura(url, None)
-    if article and article.text and len(article.text) > 100:
-        return article
-
-    # Fallback to newspaper4k
-    article = _scrape_with_newspaper(url, html)
     if article and article.text and len(article.text) > 100:
         return article
 

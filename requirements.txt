@@ -1,10 +1,9 @@
 fastapi
-uvicorn
+uvicorn[standard]
 python-dotenv
 jinja2
 python-multipart
 trafilatura
-newspaper4k
 openai
 python-docx
 pydantic
