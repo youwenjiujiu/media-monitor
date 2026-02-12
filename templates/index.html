@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QIYU Media Monitoring Report Generator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>QIYU Media Monitoring Report Generator</h1>
+        <p class="subtitle">Paste news article URLs below (one per line) and generate a formatted Word report.</p>
+
+        <form id="report-form">
+            <textarea
+                id="urls"
+                name="urls"
+                rows="12"
+                placeholder="https://www.example.com/news/article-1&#10;https://www.example.com/news/article-2&#10;https://www.example.com/news/article-3"
+            ></textarea>
+
+            <button type="submit" id="submit-btn">
+                <span id="btn-text">Generate Report</span>
+                <span id="btn-loading" class="hidden">
+                    <span class="spinner"></span>
+                    Processing...
+                </span>
+            </button>
+
+            <p id="status-msg" class="hidden"></p>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('report-form');
+        const btn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoading = document.getElementById('btn-loading');
+        const statusMsg = document.getElementById('status-msg');
+        const textarea = document.getElementById('urls');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const urls = textarea.value.trim();
+            if (!urls) {
+                statusMsg.textContent = 'Please enter at least one URL.';
+                statusMsg.className = 'error';
+                return;
+            }
+
+            // Show loading state
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+            statusMsg.textContent = 'Scraping articles and generating report... This may take a minute.';
+            statusMsg.className = 'info';
+
+            try {
+                const formData = new FormData();
+                formData.append('urls', urls);
+
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Media_Monitoring_Report.docx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                statusMsg.textContent = 'Report downloaded successfully!';
+                statusMsg.className = 'success';
+            } catch (err) {
+                statusMsg.textContent = `Error: ${err.message}`;
+                statusMsg.className = 'error';
+            } finally {
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                btnLoading.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
